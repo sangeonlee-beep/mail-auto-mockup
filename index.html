@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>메일 발송 도메인 자동 분배 - UI 목업</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f7; color: #1d1d1f; padding: 24px; }
+  .container { max-width: 1040px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+  .card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .info-row { display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
+  .info-item { display: flex; align-items: center; gap: 8px; }
+  .info-label { font-size: 13px; color: #888; }
+  .info-value { font-size: 15px; font-weight: 600; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+  .badge-red { background: #fee2e2; color: #dc2626; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; border-bottom: 2px solid #e5e7eb; font-weight: 600; color: #555; font-size: 12px; }
+  td { padding: 8px 12px; border-bottom: 1px solid #f3f4f6; }
+  tr:hover td { background: #fafafa; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .btn { padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-primary { background: #2563eb; color: #fff; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-secondary { background: #f3f4f6; color: #374151; }
+  .btn-secondary:hover { background: #e5e7eb; }
+  .btn-group { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
+  .modal { background: #fff; border-radius: 16px; padding: 32px; max-width: 520px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+  .modal h2 { font-size: 18px; margin-bottom: 16px; }
+  .modal-hidden { display: none; }
+  .option-card { border: 2px solid #e5e7eb; border-radius: 10px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.15s; }
+  .option-card:hover { border-color: #2563eb; background: #f0f4ff; }
+  .option-card h3 { font-size: 15px; color: #1d1d1f; margin-bottom: 4px; }
+  .option-card p { font-size: 13px; color: #666; }
+  .section-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0 12px; }
+  .section-divider span { font-size: 12px; font-weight: 600; color: #888; white-space: nowrap; }
+  .section-divider hr { flex: 1; border: none; border-top: 1px solid #e5e7eb; }
+  .domain-check { width: 16px; height: 16px; accent-color: #2563eb; cursor: pointer; }
+  .summary-box { display: flex; gap: 16px; padding: 16px; background: #f0f4ff; border-radius: 8px; margin-bottom: 16px; }
+  .summary-item { text-align: center; flex: 1; }
+  .summary-num { font-size: 24px; font-weight: 700; color: #2563eb; }
+  .summary-label { font-size: 11px; color: #888; margin-top: 2px; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+  .tag-primary { background: #dbeafe; color: #2563eb; }
+  .tag-zero { background: #dcfce7; color: #16a34a; }
+  .tag-auto { background: #fef3c7; color: #d97706; }
+  .tag-cap { background: #fee2e2; color: #dc2626; font-size: 10px; margin-left: 4px; }
+  .warning-bar { padding: 12px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #dc2626; }
+  .success-bar { padding: 12px 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #16a34a; }
+  .step-indicator { display: flex; gap: 0; margin-bottom: 24px; }
+  .step { flex: 1; text-align: center; padding: 12px; font-size: 13px; font-weight: 600; position: relative; color: #9ca3af; }
+  .step.active { color: #2563eb; }
+  .step.done { color: #16a34a; }
+  .step::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: #e5e7eb; }
+  .step.active::after { background: #2563eb; }
+  .step.done::after { background: #16a34a; }
+  .hidden { display: none; }
+  .note { font-size: 12px; color: #888; margin-top: 12px; line-height: 1.6; }
+  .note strong { color: #555; }
+  .burden-bar { display: inline-flex; align-items: center; gap: 6px; }
+  .burden-meter { width: 60px; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; display: inline-block; }
+  .burden-fill { height: 100%; border-radius: 3px; }
+  .subtotal-row { font-weight: 600; background: #f9fafb; }
+  .subtotal-row td { border-top: 1px solid #e5e7eb; }
+  .stage-label { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 600; display: inline-block; }
+  .stage-1 { background: #dbeafe; color: #2563eb; }
+  .stage-2 { background: #dcfce7; color: #16a34a; }
+  .stage-3 { background: #fef3c7; color: #d97706; }
+  .cap-indicator { font-size: 11px; color: #dc2626; font-weight: 600; }
+  .detail-sub { font-size: 11px; color: #888; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>메일 발송 드래프트 생성</h1>
+  <p style="font-size: 13px; color: #888; margin-bottom: 20px;">캠페인: 2025-N-SD-ANUA-042 | ANUA US Seeding Wave 3</p>
+
+  <div class="step-indicator" id="stepIndicator">
+    <div class="step active" id="step1">1. 발송 설정</div>
+    <div class="step" id="step2">2. 캐파 확인</div>
+    <div class="step" id="step3">3. 분배 확인 및 생성</div>
+  </div>
+
+  <!-- ==================== STEP 1 ==================== -->
+  <div id="view-setup">
+    <div class="card">
+      <div class="info-row">
+        <div class="info-item">
+          <span class="info-label">대상 인플루언서</span>
+          <span class="info-value">20,000명</span>
+        </div>
+      </div>
+      <h2>발송 계정별 잔여량</h2>
+      <table>
+        <thead><tr><th>발송 계정</th><th class="num">7일 총 수량</th><th class="num">7일 예약 수량</th><th class="num">할당된 캠페인 수</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>partners@kglowing.com</td><td class="num">2,100</td><td class="num">0</td><td class="num">4개</td><td><a href="#" style="font-size:12px;">상세보기</a></td></tr>
+          <tr><td>collab@kglowingamerica.com</td><td class="num">2,100</td><td class="num">0</td><td class="num">1개</td><td><a href="#" style="font-size:12px;">상세보기</a></td></tr>
+          <tr><td>official@kglowingusa.com</td><td class="num">2,000</td><td class="num">0</td><td class="num">2개</td><td><a href="#" style="font-size:12px;">상세보기</a></td></tr>
+          <tr class="subtotal-row"><td>합계</td><td class="num">6,200</td><td class="num">0</td><td></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2>발송 시간대 설정 (KST)</h2>
+      <p style="font-size: 13px; color: #dc2626; margin-bottom: 12px;">대상 인플루언서 수가 해당 기간에 생성 가능한 메일 수량 보다 많으면 생성에 실패합니다.</p>
+      <div class="info-row">
+        <div class="info-item"><span class="info-label">발송 날짜 범위</span><span class="badge badge-red">04/13 ~ 04/20</span></div>
+        <div class="info-item"><span class="info-label">메일 발송 시간 범위</span><span class="badge badge-red">01:00 ~ 05:00</span></div>
+      </div>
+      <div style="padding: 12px; background: #f9fafb; border-radius: 8px; font-size: 13px; text-align: center;">
+        최종 설정 요약<br><strong>04/13 ~ 04/20 기간 동안<br>매일 01:00 ~ 05:00 시간대에 발송</strong>
+      </div>
+    </div>
+    <div class="warning-bar">
+      <span>⚠️</span>
+      <span><strong>캐파 부족:</strong> 대상 20,000명 중 지정 도메인으로 6,200명만 발송 가능합니다. (부족: 13,800명)</span>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-secondary" onclick="alert('취소')">취소</button>
+      <button class="btn btn-primary" onclick="showModal()">선택한 항목 일괄 드래프트 생성</button>
+    </div>
+  </div>
+
+  <!-- ==================== 모달 ==================== -->
+  <div class="modal-overlay modal-hidden" id="shortageModal">
+    <div class="modal">
+      <h2>⚠️ 발송 캐파가 부족합니다</h2>
+      <div class="summary-box">
+        <div class="summary-item"><div class="summary-num">20,000</div><div class="summary-label">발송 대상</div></div>
+        <div class="summary-item"><div class="summary-num" style="color:#16a34a;">6,200</div><div class="summary-label">지정 도메인 캐파</div></div>
+        <div class="summary-item"><div class="summary-num" style="color:#dc2626;">13,800</div><div class="summary-label">부족분</div></div>
+      </div>
+      <p style="font-size: 13px; color: #666; margin-bottom: 16px;">캠페인에 지정된 3개 도메인의 캐파만으로는 전체 발송이 불가합니다.</p>
+      <div class="option-card" onclick="showAutoDistribute()">
+        <h3>🔄 다른 도메인에서 자동 분배</h3>
+        <p>도메인별 캠페인 부담을 고려하여, 여유 있는 도메인에 부족분을 최적 분배합니다.</p>
+      </div>
+      <div class="option-card" onclick="hideModal()">
+        <h3>✏️ 수동 재조정</h3>
+        <p>날짜/시간대/대상 수를 직접 수정하여 기존 도메인 내에서 해결합니다.</p>
+      </div>
+      <div class="btn-group"><button class="btn btn-secondary" onclick="hideModal()">취소</button></div>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 3: 분배 결과 ==================== -->
+  <div id="view-distribute" class="hidden">
+    <div id="statusBar" class="success-bar">
+      <span>✅</span>
+      <span><strong>자동 분배 완료:</strong> 20,000명 전원 배정 완료. 총 7개 도메인 사용.</span>
+    </div>
+
+    <div class="card">
+      <h2>분배 결과 미리보기</h2>
+      <div class="summary-box">
+        <div class="summary-item"><div class="summary-num">20,000</div><div class="summary-label">발송 대상</div></div>
+        <div class="summary-item"><div class="summary-num" style="color:#16a34a;" id="totalAssigned">20,000</div><div class="summary-label">배정 완료</div></div>
+        <div class="summary-item"><div class="summary-num" style="color:#9ca3af;" id="totalUnassigned">0</div><div class="summary-label">미배정</div></div>
+        <div class="summary-item"><div class="summary-num" style="color:#2563eb;" id="totalDomains">7</div><div class="summary-label">사용 도메인 수</div></div>
+      </div>
+
+      <!-- 1단계 -->
+      <div class="section-divider">
+        <span class="stage-label stage-1">1단계</span><span>캠페인 지정 도메인</span><hr>
+      </div>
+      <table>
+        <thead><tr><th style="width:30px"></th><th>발송 계정</th><th class="num">배정 수량</th><th>구분</th></tr></thead>
+        <tbody>
+          <tr><td><input type="checkbox" class="domain-check" checked disabled></td><td>partners@kglowing.com</td><td class="num" style="font-weight:600;">2,100</td><td><span class="tag tag-primary">지정</span></td></tr>
+          <tr><td><input type="checkbox" class="domain-check" checked disabled></td><td>collab@kglowingamerica.com</td><td class="num" style="font-weight:600;">2,100</td><td><span class="tag tag-primary">지정</span></td></tr>
+          <tr><td><input type="checkbox" class="domain-check" checked disabled></td><td>official@kglowingusa.com</td><td class="num" style="font-weight:600;">2,000</td><td><span class="tag tag-primary">지정</span></td></tr>
+          <tr class="subtotal-row"><td></td><td>소계</td><td class="num">6,200</td><td></td></tr>
+        </tbody>
+      </table>
+
+      <!-- 2단계 -->
+      <div class="section-divider">
+        <span class="stage-label stage-2">2단계</span><span>부담 없는 도메인 (전량 투입)</span><hr>
+      </div>
+      <table>
+        <thead><tr><th style="width:30px">사용</th><th>도메인</th><th class="num">배정 수량</th><th class="num">가용량</th><th>부담</th><th>구분</th></tr></thead>
+        <tbody id="stage2Body">
+          <tr data-domain="kglowingusa.co.kr" data-capacity="5000" data-burden="0" data-stage="2">
+            <td><input type="checkbox" class="domain-check overflow-check" checked onchange="recalculate()"></td>
+            <td>kglowingusa.co.kr</td>
+            <td class="num assigned" style="font-weight:600;">5,000</td>
+            <td class="num">5,000</td>
+            <td><div class="burden-bar"><div class="burden-meter"><div class="burden-fill" style="width:0%;background:#16a34a;"></div></div><span style="font-size:11px;color:#888;">0</span></div></td>
+            <td><span class="tag tag-zero">부담 0</span></td>
+          </tr>
+          <tr class="subtotal-row" id="stage2Subtotal"><td></td><td>소계</td><td class="num">5,000</td><td></td><td></td><td></td></tr>
+        </tbody>
+      </table>
+
+      <!-- 3단계 -->
+      <div class="section-divider">
+        <span class="stage-label stage-3">3단계</span><span id="stage3Label">부담 반비례 분배 — 부족분 8,800건</span><hr>
+      </div>
+      <table>
+        <thead><tr>
+          <th style="width:30px">사용</th><th>도메인</th><th class="num">배정 수량</th>
+          <th class="num">가용량(cap)</th><th>부담</th><th class="num">비중</th><th>구분</th>
+        </tr></thead>
+        <tbody id="stage3Body">
+          <tr data-domain="kglowingusa.ai" data-capacity="3000" data-burden="800" data-stage="3">
+            <td><input type="checkbox" class="domain-check overflow-check" checked onchange="recalculate()"></td>
+            <td>kglowingusa.ai<div class="detail-sub">캠페인B (잔여 800명)</div></td>
+            <td class="num assigned" style="font-weight:600;">3,000</td>
+            <td class="num cap-val">3,000</td>
+            <td><div class="burden-bar"><div class="burden-meter"><div class="burden-fill" style="width:18%;background:#f59e0b;"></div></div><span style="font-size:11px;color:#888;">800</span></div></td>
+            <td class="num weight">54.2%</td>
+            <td><span class="tag tag-auto">자동</span><span class="tag tag-cap cap-tag">cap</span></td>
+          </tr>
+          <tr data-domain="kglowing.co.kr" data-capacity="5000" data-burden="1200" data-stage="3">
+            <td><input type="checkbox" class="domain-check overflow-check" checked onchange="recalculate()"></td>
+            <td>kglowing.co.kr<div class="detail-sub">캠페인D (잔여 1,200명)</div></td>
+            <td class="num assigned" style="font-weight:600;">4,573</td>
+            <td class="num cap-val">5,000</td>
+            <td><div class="burden-bar"><div class="burden-meter"><div class="burden-fill" style="width:27%;background:#f59e0b;"></div></div><span style="font-size:11px;color:#888;">1,200</span></div></td>
+            <td class="num weight">36.1%</td>
+            <td><span class="tag tag-auto">자동</span></td>
+          </tr>
+          <tr data-domain="kglowing.ai" data-capacity="5000" data-burden="4500" data-stage="3">
+            <td><input type="checkbox" class="domain-check overflow-check" checked onchange="recalculate()"></td>
+            <td>kglowing.ai<div class="detail-sub">캠페인A (잔여 3,000명), 캠페인C (잔여 1,500명)</div></td>
+            <td class="num assigned" style="font-weight:600;">1,227</td>
+            <td class="num cap-val">5,000</td>
+            <td><div class="burden-bar"><div class="burden-meter"><div class="burden-fill" style="width:100%;background:#ef4444;"></div></div><span style="font-size:11px;color:#888;">4,500</span></div></td>
+            <td class="num weight">9.7%</td>
+            <td><span class="tag tag-auto">자동</span></td>
+          </tr>
+          <tr class="subtotal-row" id="stage3Subtotal"><td></td><td>소계</td><td class="num">8,800</td><td></td><td></td><td></td><td></td></tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        <strong>분배 로직:</strong><br>
+        - <strong>비중</strong>은 부담(잔여 모집 인원 합계)에 반비례하여 산출. 부담이 적은 도메인에 더 많이 배정.<br>
+        - <strong>가용량</strong>은 스케줄 기간 내 슬롯별 잔여 캐파를 시뮬레이션한 최대 투입 가능 건수 (상한선).<br>
+        - 비중 기준 목표가 가용량을 초과하면 <span class="tag tag-cap">cap</span> 처리 후, 나머지를 다른 도메인에 자동 재분배.<br>
+        - 체크 해제 시 해당 도메인 제외 후 자동 재계산.
+      </div>
+    </div>
+
+    <!-- 전원 배정 시 버튼 -->
+    <div class="btn-group" id="btnFullAssigned">
+      <button class="btn btn-secondary" onclick="goBack()">← 설정으로 돌아가기</button>
+      <button class="btn btn-primary" onclick="confirmGenerate()">✓ 확인 및 드래프트 생성</button>
+    </div>
+
+    <!-- 미배정 발생 시 선택 카드 -->
+    <div id="partialChoiceArea" class="hidden">
+      <div class="card" style="border: 2px solid #fecaca;">
+        <h2 style="color: #dc2626;">⚠️ 전체 도메인 캐파를 사용해도 <span id="unassignedCount">0</span>건이 미배정입니다.</h2>
+        <p style="font-size: 13px; color: #666; margin-bottom: 16px;">아래 옵션 중 하나를 선택해주세요.</p>
+
+        <div class="option-card" onclick="confirmPartialGenerate()" style="border-color: #bbf7d0;">
+          <h3 style="color: #16a34a;">✅ 배정된 <span class="partial-assigned-text">0</span>건만 생성</h3>
+          <p>미배정 <span class="partial-unassigned-text">0</span>건은 발송하지 않습니다.</p>
+        </div>
+
+        <div class="option-card" onclick="goBack()">
+          <h3>← 전체 취소하고 설정으로 돌아가기</h3>
+          <p>날짜/시간 범위를 넓히거나 대상 수를 조정하여 재시도합니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 완료 ==================== -->
+  <div id="view-done" class="hidden">
+    <div class="card" style="text-align: center; padding: 48px;">
+      <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
+      <h2 style="font-size: 20px; margin-bottom: 8px;">드래프트 생성 완료</h2>
+      <p style="color: #666; margin-bottom: 24px;" id="doneMsg">20,000건의 드래프트가 7개 도메인에 분배되어 생성되었습니다.</p>
+      <div class="summary-box" style="max-width: 400px; margin: 0 auto 24px;">
+        <div class="summary-item"><div class="summary-num" style="color:#16a34a;" id="doneCount">20,000</div><div class="summary-label">생성 완료</div></div>
+        <div class="summary-item"><div class="summary-num" style="color:#2563eb;" id="doneDomains">7</div><div class="summary-label">사용 도메인</div></div>
+        <div class="summary-item"><div class="summary-num" style="color:#9ca3af;">0</div><div class="summary-label">실패</div></div>
+      </div>
+      <button class="btn btn-primary" onclick="location.reload()">목록으로 돌아가기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TARGET = 20000;
+const PRIMARY_ASSIGNED = 6200;
+const TOTAL_SHORTAGE = TARGET - PRIMARY_ASSIGNED;
+
+function showModal() { document.getElementById('shortageModal').classList.remove('modal-hidden'); }
+function hideModal() { document.getElementById('shortageModal').classList.add('modal-hidden'); }
+
+function showAutoDistribute() {
+  hideModal();
+  document.getElementById('view-setup').classList.add('hidden');
+  document.getElementById('view-distribute').classList.remove('hidden');
+  document.getElementById('step1').className = 'step done';
+  document.getElementById('step2').className = 'step done';
+  document.getElementById('step3').className = 'step active';
+  recalculate();
+}
+
+function goBack() {
+  document.getElementById('view-setup').classList.remove('hidden');
+  document.getElementById('view-distribute').classList.add('hidden');
+  document.getElementById('step1').className = 'step active';
+  document.getElementById('step2').className = 'step';
+  document.getElementById('step3').className = 'step';
+}
+
+function confirmGenerate() {
+  const assigned = parseInt(document.getElementById('totalAssigned').textContent.replace(/,/g, ''));
+  const domains = document.getElementById('totalDomains').textContent;
+  document.getElementById('doneCount').textContent = assigned.toLocaleString();
+  document.getElementById('doneDomains').textContent = domains;
+  document.getElementById('doneMsg').textContent = `${assigned.toLocaleString()}건의 드래프트가 ${domains}개 도메인에 분배되어 생성되었습니다.`;
+  document.getElementById('view-distribute').classList.add('hidden');
+  document.getElementById('view-done').classList.remove('hidden');
+  document.getElementById('step3').className = 'step done';
+  document.getElementById('stepIndicator').style.display = 'none';
+}
+
+function distributeByBurden(shortage, domains) {
+  // Returns { assignments: [{domain, assigned, capped}], total }
+  if (domains.length === 0 || shortage <= 0) return { assignments: domains.map(d => ({...d, assigned: 0, capped: false})), total: 0 };
+
+  let remaining = shortage;
+  let pool = domains.map(d => ({...d, assigned: 0, capped: false, done: false}));
+
+  // Iterative: assign by weight, cap, redistribute
+  for (let round = 0; round < pool.length && remaining > 0; round++) {
+    const active = pool.filter(d => !d.done);
+    if (active.length === 0) break;
+
+    const inverses = active.map(d => 1 / Math.max(d.burden, 1));
+    const sumInv = inverses.reduce((a, b) => a + b, 0);
+
+    let roundRemaining = remaining;
+    let anyCapped = false;
+
+    active.forEach((d, i) => {
+      const weight = inverses[i] / sumInv;
+      let share = (i === active.length - 1) ? roundRemaining : Math.round(remaining * weight);
+      share = Math.min(share, roundRemaining);
+
+      const headroom = d.capacity - d.assigned;
+      if (share > headroom) {
+        share = headroom;
+        d.capped = true;
+        d.done = true;
+        anyCapped = true;
+      }
+      d.assigned += share;
+      roundRemaining -= share;
+    });
+
+    remaining = roundRemaining;
+    if (!anyCapped) break;
+  }
+
+  return {
+    assignments: pool,
+    total: pool.reduce((s, d) => s + d.assigned, 0)
+  };
+}
+
+function recalculate() {
+  let shortage = TOTAL_SHORTAGE;
+
+  // Stage 2
+  const stage2Rows = [...document.querySelectorAll('#stage2Body tr[data-stage="2"]')];
+  let active2 = [];
+  stage2Rows.forEach(row => {
+    const cb = row.querySelector('.overflow-check');
+    if (cb && cb.checked) {
+      active2.push({ row, capacity: parseInt(row.dataset.capacity) });
+    } else {
+      row.querySelector('.assigned').textContent = '-';
+    }
+  });
+
+  let stage2Total = 0;
+  if (active2.length > 0) {
+    let left = shortage;
+    active2.forEach((d, i) => {
+      const share = Math.min(Math.floor(left / (active2.length - i)), d.capacity);
+      d.row.querySelector('.assigned').textContent = share.toLocaleString();
+      stage2Total += share;
+      left -= share;
+    });
+  }
+  document.querySelector('#stage2Subtotal .num').textContent = stage2Total.toLocaleString();
+
+  // Stage 3
+  let remainingShortage = shortage - stage2Total;
+  document.getElementById('stage3Label').textContent =
+    remainingShortage > 0
+      ? `부담 반비례 분배 — 부족분 ${remainingShortage.toLocaleString()}건`
+      : `부담 반비례 분배 — 2단계에서 모두 배정 완료`;
+
+  const stage3Rows = [...document.querySelectorAll('#stage3Body tr[data-stage="3"]')];
+  let domains3 = [];
+  stage3Rows.forEach(row => {
+    const cb = row.querySelector('.overflow-check');
+    if (cb && cb.checked) {
+      domains3.push({
+        row,
+        capacity: parseInt(row.dataset.capacity),
+        burden: parseInt(row.dataset.burden)
+      });
+    } else {
+      row.querySelector('.assigned').textContent = '-';
+      row.querySelector('.weight').textContent = '-';
+      const capTag = row.querySelector('.cap-tag');
+      if (capTag) capTag.style.display = 'none';
+    }
+  });
+
+  let stage3Total = 0;
+  if (domains3.length > 0 && remainingShortage > 0) {
+    // Calculate initial weights for display
+    const inverses = domains3.map(d => 1 / Math.max(d.burden, 1));
+    const sumInv = inverses.reduce((a, b) => a + b, 0);
+
+    domains3.forEach((d, i) => {
+      d.row.querySelector('.weight').textContent = ((inverses[i] / sumInv) * 100).toFixed(1) + '%';
+    });
+
+    const result = distributeByBurden(remainingShortage, domains3);
+    result.assignments.forEach(d => {
+      d.row.querySelector('.assigned').textContent = d.assigned.toLocaleString();
+      const capTag = d.row.querySelector('.cap-tag');
+      if (capTag) capTag.style.display = d.capped ? 'inline-block' : 'none';
+    });
+    stage3Total = result.total;
+  } else {
+    domains3.forEach(d => {
+      if (d.row.querySelector('.overflow-check').checked) {
+        d.row.querySelector('.assigned').textContent = '0';
+        d.row.querySelector('.weight').textContent = '-';
+        const capTag = d.row.querySelector('.cap-tag');
+        if (capTag) capTag.style.display = 'none';
+      }
+    });
+  }
+  document.querySelector('#stage3Subtotal .num').textContent = stage3Total.toLocaleString();
+
+  // Totals
+  const totalAssigned = PRIMARY_ASSIGNED + stage2Total + stage3Total;
+  const unassigned = TARGET - totalAssigned;
+  const usedDomains = 3
+    + active2.length
+    + domains3.filter(d => d.row.querySelector('.overflow-check').checked && parseInt(d.row.querySelector('.assigned').textContent.replace(/,/g,'')) > 0).length;
+
+  document.getElementById('totalAssigned').textContent = totalAssigned.toLocaleString();
+  document.getElementById('totalUnassigned').textContent = unassigned.toLocaleString();
+  document.getElementById('totalDomains').textContent = usedDomains;
+
+  const bar = document.getElementById('statusBar');
+  const btnFull = document.getElementById('btnFullAssigned');
+  const partialArea = document.getElementById('partialChoiceArea');
+
+  if (unassigned > 0) {
+    bar.className = 'warning-bar';
+    bar.innerHTML = `<span>⚠️</span><span><strong>일부 미배정:</strong> ${totalAssigned.toLocaleString()}명 배정 / ${unassigned.toLocaleString()}명 미배정. 모든 도메인의 가용량이 소진되었습니다.</span>`;
+
+    // Show partial choice, hide normal buttons
+    btnFull.classList.add('hidden');
+    partialArea.classList.remove('hidden');
+    document.getElementById('unassignedCount').textContent = unassigned.toLocaleString();
+    document.querySelectorAll('.partial-assigned-text').forEach(el => el.textContent = totalAssigned.toLocaleString());
+    document.querySelectorAll('.partial-unassigned-text').forEach(el => el.textContent = unassigned.toLocaleString());
+  } else {
+    bar.className = 'success-bar';
+    bar.innerHTML = `<span>✅</span><span><strong>자동 분배 완료:</strong> ${TARGET.toLocaleString()}명 전원 배정 완료. 총 ${usedDomains}개 도메인 사용.</span>`;
+
+    // Show normal buttons, hide partial choice
+    btnFull.classList.remove('hidden');
+    partialArea.classList.add('hidden');
+  }
+}
+
+function confirmPartialGenerate() {
+  const assigned = parseInt(document.getElementById('totalAssigned').textContent.replace(/,/g, ''));
+  const domains = document.getElementById('totalDomains').textContent;
+  document.getElementById('doneCount').textContent = assigned.toLocaleString();
+  document.getElementById('doneDomains').textContent = domains;
+  document.getElementById('doneMsg').textContent = `${assigned.toLocaleString()}건의 드래프트가 ${domains}개 도메인에 분배되어 생성되었습니다.`;
+  document.getElementById('view-distribute').classList.add('hidden');
+  document.getElementById('view-done').classList.remove('hidden');
+  document.getElementById('step3').className = 'step done';
+  document.getElementById('stepIndicator').style.display = 'none';
+}
+</script>
+
+</body>
+</html>
